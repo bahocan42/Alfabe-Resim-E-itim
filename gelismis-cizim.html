@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Çizim Ustası - Gelişmiş</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f1f4fa;color:#222}
+header{background:#253b80;color:white;text-align:center;padding:18px}
+header h1{margin:0;font-size:25px}
+header p{margin:7px 0 0}
+main{max-width:850px;margin:auto;padding:15px}
+.panel{background:white;padding:15px;border-radius:14px;margin-bottom:15px;box-shadow:0 2px 9px #0001}
+h2{font-size:19px;margin-top:0}
+button,.upload{border:0;border-radius:9px;padding:12px 14px;background:#3157a5;color:white;font-size:15px;cursor:pointer;display:inline-block;margin:4px}
+button:active{opacity:.7}
+.tools{display:flex;flex-wrap:wrap;gap:5px}
+.tools button.active{background:#e17a21}
+input[type=color]{width:45px;height:42px;border:0}
+input[type=range]{width:100%}
+#art{width:100%;height:auto;display:block;background:white;touch-action:none;border:2px solid #ddd;border-radius:8px}
+#photo{display:none}
+.colors{display:flex;flex-wrap:wrap;gap:9px}
+.swatch{width:34px;height:34px;border-radius:50%;border:2px solid #bbb;cursor:pointer}
+.step{padding:10px;background:#f2f5ff;border-radius:9px;margin:8px 0}
+small{color:#666}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🎨 Çizim Ustası</h1>
+<p>Hayal et, çiz, renklendir!</p>
+</header>
+
+<main>
+
+<section class="panel">
+<h2>📷 Fotoğraf veya Kamera</h2>
+<label class="upload">
+📁 Fotoğraf seç
+<input id="file" type="file" accept="image/*" hidden>
+</label>
+<label class="upload">
+📸 Kamerayı aç
+<input id="camera" type="file" accept="image/*" capture="environment" hidden>
+</label>
+<button onclick="sketch()">✏️ Kara kalem yap</button>
+<button onclick="original()">🖼️ Orijinal fotoğraf</button>
+</section>
+
+<section class="panel">
+<h2>🖌️ Çizim araçları</h2>
+<div class="tools">
+<button id="pen" class="active" onclick="tool('pen')">✏️ Kalem</button>
+<button id="eraser" onclick="tool('eraser')">🧽 Silgi</button>
+<button onclick="clearDrawing()">🗑️ Çizimi temizle</button>
+</div>
+<p>Renk seç:</p>
+<div class="colors">
+{#dummy}
+</div>
+<div class="colors" id="colors">
+</div>
+<p>Özel renk: <input type="color" id="custom" value="#000000"></p>
+<p>Kalınlık: <span id="sizeLabel">5</span></p>
+<input type="range" id="size" min="1" max="35" value="5">
+</section>
+
+<section class="panel">
+<h2>📝 Çizim alanı</h2>
+<canvas id="art" width="900" height="650"></canvas>
+<button onclick="saveImage()">⬇️ Çizimi telefona kaydet</button>
+<button onclick="clearAll()">Yeni sayfa</button>
+<small>Parmağınla veya fareyle çizim yapabilirsin.</small>
+</section>
+
+<section class="panel">
+<h2>🌟 Adım adım çizim rehberi</h2>
+<div class="step"><b>1. Adım:</b> Çizeceğin resmi seç veya kamerayla çek.</div>
+<div class="step"><b>2. Adım:</b> Kara kalem düğmesiyle resmi çizim şablonuna dönüştür.</div>
+<div class="step"><b>3. Adım:</b> Kalem aracını ve istediğin rengi seç.</div>
+<div class="step"><b>4. Adım:</b> Resmin üzerinden geçerek çizimini tamamla.</div>
+<div class="step"><b>5. Adım:</b> Çalışmanı PNG olarak kaydet.</div>
+</section>
+
+</main>
+
+<script>
+const canvas=document.getElementById("art");
+const ctx=canvas.getContext("2d");
+let drawing=false, currentTool="pen", color="#000000";
+let backgroundImage=null;
+
+function blank(){
+ctx.fillStyle="white";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+backgroundImage=null;
+}
+blank();
+
+function loadPhoto(file){
+if(!file)return;
+const reader=new FileReader();
+reader.onload=e=>{
+const img=new Image();
+img.onload=()=>{
+canvas.width=Math.min(img.width,1200);
+canvas.height=Math.min(img.height,1200);
+let scale=Math.min(canvas.width/img.width,canvas.height/img.height);
+let w=img.width*scale,h=img.height*scale;
+ctx.fillStyle="white";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.drawImage(img,(canvas.width-w)/2,(canvas.height-h)/2,w,h);
+backgroundImage=ctx.getImageData(0,0,canvas.width,canvas.height);
+};
+img.src=e.target.result;
+};
+reader.readAsDataURL(file);
+}
+
+document.getElementById("file").onchange=e=>loadPhoto(e.target.files[0]);
+document.getElementById("camera").onchange=e=>loadPhoto(e.target.files[0]);
+
+function sketch(){
+if(!backgroundImage){alert("Önce bir fotoğraf seç veya çek.");return;}
+const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+const d=img.data,w=canvas.width,h=canvas.height;
+let gray=new Uint8ClampedArray(w*h);
+for(let i=0;i<gray.length;i++){
+let p=i*4;
+gray[i]=0.299*d[p]+0.587*d[p+1]+0.114*d[p+2];
+}
+for(let y=1;y<h-1;y++){
+for(let x=1;x<w-1;x++){
+let i=y*w+x;
+let gx=-gray[i-w-1]+gray[i-w+1]-2*gray[i-1]+2*gray[i+1]-gray[i+w-1]+gray[i+w+1];
+let gy=-gray[i-w-1]-2*gray[i-w]-gray[i-w+1]+gray[i+w-1]+2*gray[i+w]+gray[i+w+1];
+let edge=Math.sqrt(gx*gx+gy*gy);
+let shade=Math.max(0,255-edge*1.6);
+let p=i*4;
+d[p]=d[p+1]=d[p+2]=shade;
+d[p+3]=255;
+}
+}
+ctx.putImageData(img,0,0);
+}
+
+function original(){
+if(backgroundImage)ctx.putImageData(backgroundImage,0,0);
+}
+
+function tool(t){
+currentTool=t;
+document.getElementById("pen").classList.toggle("active",t==="pen");
+document.getElementById("eraser").classList.toggle("active",t==="eraser");
+}
+
+function position(e){
+const r=canvas.getBoundingClientRect();
+return {
+x:(e.clientX-r.left)*canvas.width/r.width,
+y:(e.clientY-r.top)*canvas.height/r.height
+};
+}
+
+canvas.addEventListener("pointerdown",e=>{
+e.preventDefault();
+drawing=true;
+canvas.setPointerCapture(e.pointerId);
+const p=position(e);
+ctx.beginPath();
+ctx.moveTo(p.x,p.y);
+});
+
+canvas.addEventListener("pointermove",e=>{
+if(!drawing)return;
+e.preventDefault();
+const p=position(e);
+ctx.lineWidth=document.getElementById("size").value;
+ctx.lineCap="round";
+ctx.lineJoin="round";
+ctx.strokeStyle=currentTool==="eraser"?"white":color;
+ctx.lineTo(p.x,p.y);
+ctx.stroke();
+});
+
+function stop(){drawing=false;ctx.beginPath();}
+canvas.addEventListener("pointerup",stop);
+canvas.addEventListener("pointercancel",stop);
+
+document.getElementById("size").oninput=e=>{
+document.getElementById("sizeLabel").textContent=e.target.value;
+};
+
+document.getElementById("custom").oninput=e=>{
+color=e.target.value;
+tool("pen");
+};
+
+const palette=["#000000","#ffffff","#ff0000","#ff8800","#ffdd00","#00aa44","#0088ff","#6633cc","#ff66aa","#8b4513"];
+const colors=document.getElementById("colors");
+palette.forEach(c=>{
+const b=document.createElement("button");
+b.className="swatch";
+b.style.background=c;
+b.title=c;
+b.onclick=()=>{color=c;tool("pen");};
+colors.appendChild(b);
+});
+
+function clearDrawing(){
+if(confirm("Bütün çizimleri temizleyelim mi?"))original();
+}
+
+function clearAll(){
+if(confirm("Yeni boş sayfa açılsın mı?")){
+canvas.width=900;
+canvas.height=650;
+blank();
+}
+}
+
+function saveImage(){
+const link=document.createElement("a");
+link.download="cizim-ustasi.png";
+link.href=canvas.toDataURL("image/png");
+link.click();
+}
+</script>
+</body>
+</html>

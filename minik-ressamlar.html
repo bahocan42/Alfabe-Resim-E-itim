@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minik Ressamlar</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#fff5e8;color:#333;text-align:center}
+header{background:#ff8c42;color:white;padding:20px 10px}
+header h1{margin:0;font-size:30px}
+header p{margin:8px 0 0}
+nav{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:12px}
+button{border:0;border-radius:14px;padding:12px 16px;background:#ffb347;color:#333;font-size:16px;font-weight:bold;cursor:pointer}
+button:active{transform:scale(.96)}
+section{display:none;padding:15px;max-width:800px;margin:auto}
+section.active{display:block}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.card{background:white;padding:18px 8px;border-radius:18px;box-shadow:0 3px 8px #ddd;font-size:22px;cursor:pointer}
+.card span{display:block;font-size:52px;margin-bottom:8px}
+#drawing{background:white;border:3px solid #ffb347;border-radius:15px;width:100%;height:350px;touch-action:none}
+.tools{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:12px 0}
+input[type=color]{width:55px;height:42px;border:0}
+input[type=range]{width:100px}
+.camera-area img{max-width:100%;border-radius:12px}
+footer{padding:25px;color:#777}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🎨 Minik Ressamlar</h1>
+<p>Öğren, keşfet, çiz ve eğlen!</p>
+</header>
+
+<nav>
+<button onclick="show('home')">🏠 Ana Sayfa</button>
+<button onclick="show('letters')">🔤 Harfler</button>
+<button onclick="show('animals')">🐶 Hayvanlar</button>
+<button onclick="show('objects')">🚗 Nesneler</button>
+<button onclick="show('paint')">🖌️ Çizim</button>
+<button onclick="show('camera')">📷 Kamera</button>
+</nav>
+
+<section id="home" class="active">
+<h2>Merhaba Minik Ressam! 🌈</h2>
+<p>Bugün ne öğrenmek istersin?</p>
+<div class="cards">
+<div class="card" onclick="show('letters')"><span>🔤</span>Alfabeyi Öğren</div>
+<div class="card" onclick="show('animals')"><span>🦁</span>Hayvanları Tanı</div>
+<div class="card" onclick="show('objects')"><span>🚀</span>Nesneleri Keşfet</div>
+<div class="card" onclick="show('paint')"><span>🎨</span>Resim Yap</div>
+<div class="card" onclick="show('camera')"><span>📸</span>Fotoğraf Çek</div>
+</div>
+</section>
+
+<section id="letters">
+<h2>🔤 Türkçe Alfabe</h2>
+<p>Bir harfe dokun ve sesini dinle.</p>
+<div class="cards" id="letterCards"></div>
+</section>
+
+<section id="animals">
+<h2>🐾 Hayvanları Tanıyalım</h2>
+<div class="cards" id="animalCards"></div>
+</section>
+
+<section id="objects">
+<h2>🚀 Nesneleri Tanıyalım</h2>
+<div class="cards" id="objectCards"></div>
+</section>
+
+<section id="paint">
+<h2>🖌️ Hayalindeki Resmi Çiz!</h2>
+<div class="tools">
+<label>Renk <input type="color" id="color" value="#ff0000"></label>
+<label>Kalınlık <input type="range" id="size" min="1" max="30" value="5"></label>
+<button onclick="erase()">Silgi</button>
+<button onclick="clearCanvas()">Temizle</button>
+<button onclick="saveDrawing()">Kaydet</button>
+</div>
+<canvas id="drawing"></canvas>
+<p>Parmağınla veya kalemle çizim yapabilirsin.</p>
+</section>
+
+<section id="camera">
+<h2>📷 Hayalet Kamera ve Fotoğraf Çizimi</h2>
+<p>Kameranı aç veya galerinden fotoğraf seç.</p>
+<div class="tools">
+<button onclick="startCamera()">Kamerayı Aç</button>
+<button onclick="takePhoto()">Fotoğraf Çek</button>
+<button onclick="stopCamera()">Kamerayı Kapat</button>
+</div>
+<video id="video" autoplay playsinline style="display:none;width:100%;max-width:500px;border-radius:12px"></video>
+<canvas id="photo" style="display:none;max-width:100%"></canvas>
+<div class="tools">
+<input type="file" id="upload" accept="image/*">
+<button onclick="clearPhoto()">Fotoğrafı Temizle</button>
+</div>
+<p>Fotoğraf seçtikten sonra üzerine çizim yapabilirsin.</p>
+<canvas id="photoDraw" style="width:100%;height:350px;background:white;border:3px solid #ffb347;border-radius:12px;touch-action:none"></canvas>
+</section>
+
+<footer>💖 Minik Ressamlar | Öğrenmek ve eğlenmek çok güzel!</footer>
+
+<script>
+function show(id){
+document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+if(id==='paint') resizeCanvas();
+}
+
+function speak(text){
+if(!('speechSynthesis' in window)){alert('Seslendirme desteklenmiyor.');return;}
+speechSynthesis.cancel();
+let msg=new SpeechSynthesisUtterance(text);
+msg.lang='tr-TR';
+msg.rate=0.85;
+msg.pitch=1.15;
+let voices=speechSynthesis.getVoices();
+let voice=voices.find(v=>v.lang.toLowerCase().startsWith('tr') && /female|kadın|filiz|seda/i.test(v.name))
+||voices.find(v=>v.lang.toLowerCase().startsWith('tr'));
+if(voice)msg.voice=voice;
+speechSynthesis.speak(msg);
+}
+
+const letters=['A','B','C','Ç','D','E','F','G','Ğ','H','I','İ','J','K','L','M','N','O','Ö','P','R','S','Ş','T','U','Ü','V','Y','Z'];
+const letterExamples=['Arı','Balık','Ceviz','Çiçek','Domates','Elma','Fil','Gemi','Ğ harfi','Havuç','Ihlamur','İnek','Jelibon','Kedi','Limon','Masa','Nar','Okul','Ördek','Portakal','Robot','Saat','Şemsiye','Top','Uçak','Üzüm','Vazo','Yıldız','Zebra'];
+
+letters.forEach((l,i)=>{
+let d=document.createElement('div');
+d.className='card';
+d.innerHTML='<span>'+l+'</span>'+letterExamples[i];
+d.onclick=()=>speak(l+' harfi. '+letterExamples[i]);
+document.getElementById('letterCards').appendChild(d);
+});
+
+const animals=[['🐶','Köpek'],['🐱','Kedi'],['🦁','Aslan'],['🐘','Fil'],['🐵','Maymun'],['🐰','Tavşan'],['🐼','Panda'],['🦒','Zürafa'],['🐸','Kurbağa'],['🐢','Kaplumbağa'],['🦋','Kelebek'],['🐬','Yunus']];
+const objects=[['🚗','Araba'],['✈️','Uçak'],['🚀','Roket'],['⚽','Top'],['🍎','Elma'],['🏠','Ev'],['☀️','Güneş'],['🌈','Gökkuşağı'],['🚲','Bisiklet'],['🎈','Balon'],['📚','Kitap'],['⭐','Yıldız']];
+
+function createCards(data,id){
+data.forEach(item=>{
+let d=document.createElement('div');
+d.className='card';
+d.innerHTML='<span>'+item[0]+'</span>'+item[1];
+d.onclick=()=>speak(item[1]);
+document.getElementById(id).appendChild(d);
+});
+}
+createCards(animals,'animalCards');
+createCards(objects,'objectCards');
+
+const canvas=document.getElementById('drawing');
+const ctx=canvas.getContext('2d');
+let drawing=false,eraser=false;
+function resizeCanvas(){
+let old=canvas.toDataURL();
+let w=canvas.clientWidth;
+let h=350;
+canvas.width=w*devicePixelRatio;
+canvas.height=h*devicePixelRatio;
+ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+let img=new Image();
+img.onload=()=>ctx.drawImage(img,0,0,w,h);
+img.src=old;
+}
+function position(e,c){
+let r=c.getBoundingClientRect();
+return {x:e.clientX-r.left,y:e.clientY-r.top};
+}
+function setupDraw(c){
+let x=c.getContext('2d');
+let active=false;
+function pos(e){let r=c.getBoundingClientRect();return {x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height};}
+c.addEventListener('pointerdown',e=>{
+active=true;c.setPointerCapture(e.pointerId);
+let p=pos(e);x.beginPath();x.moveTo(p.x,p.y);
+});
+c.addEventListener('pointermove',e=>{
+if(!active)return;
+let p=pos(e);
+x.lineWidth=Number(document.getElementById('size').value)*c.width/c.clientWidth;
+x.lineCap='round';x.lineJoin='round';
+x.strokeStyle=eraser?'white':document.getElementById('color').value;
+x.lineTo(p.x,p.y);x.stroke();
+});
+['pointerup','pointercancel'].forEach(ev=>c.addEventListener(ev,()=>active=false));
+}
+setupDraw(canvas);
+
+function erase(){eraser=true;}
+document.getElementById('color').oninput=()=>eraser=false;
+function clearCanvas(){ctx.clearRect(0,0,canvas.width,canvas.height);}
+function saveDrawing(){
+let a=document.createElement('a');a.download='minik-ressam-cizim.png';a.href=canvas.toDataURL();a.click();
+}
+
+const photoDraw=document.getElementById('photoDraw');
+const pctx=photoDraw.getContext('2d');
+photoDraw.width=900;photoDraw.height=600;
+setupDraw(photoDraw);
+
+document.getElementById('upload').onchange=e=>{
+let f=e.target.files[0];if(!f)return;
+let img=new Image();
+img.onload=()=>{
+photoDraw.width=900;photoDraw.height=600;
+pctx.clearRect(0,0,900,600);
+pctx.drawImage(img,0,0,900,600);
+};
+img.src=URL.createObjectURL(f);
+};
+
+async function startCamera(){
+try{
+let stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+let v=document.getElementById('video');
+v.srcObject=stream;v.style.display='block';
+}catch(e){alert('Kamera açılamadı. Siteye kamera izni ver ve HTTPS üzerinden aç.');}
+}
+function takePhoto(){
+let v=document.getElementById('video');
+if(!v.srcObject){alert('Önce kamerayı aç.');return;}
+photoDraw.width=900;photoDraw.height=600;
+pctx.drawImage(v,0,0,900,600);
+}
+function stopCamera(){
+let v=document.getElementById('video');
+if(v.srcObject)v.srcObject.getTracks().forEach(t=>t.stop());
+v.srcObject=null;v.style.display='none';
+}
+function clearPhoto(){pctx.clearRect(0,0,photoDraw.width,photoDraw.height);}
+</script>
+</body>
+</html>

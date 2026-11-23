@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f8fa">
+<title>Çizim Ustası</title>
+<style>
+:root{--ink:#202633;--muted:#6d7583;--line:#e4e7ec;--paper:#fff;--accent:#315fce;--soft:#edf2ff}
+*{box-sizing:border-box}
+body{margin:0;background:#f5f6f8;color:var(--ink);font:15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:18px 16px 12px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+h1{font-size:21px;margin:0;font-weight:750;letter-spacing:-.4px}
+.sub{font-size:12px;color:var(--muted);margin-top:3px}
+main{max-width:760px;margin:auto;padding:14px;display:grid;gap:12px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 2px 10px #17203308}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+button,.filelabel{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:11px;padding:11px 12px;font:600 14px system-ui;cursor:pointer}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.active{background:var(--soft);border-color:#b9c9fa;color:#214bb1}
+button:disabled{opacity:.45}
+h2{font-size:15px;margin:0 0 10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>*{flex:1}
+label{display:block;font-size:13px;font-weight:650;margin:12px 0 6px}
+small,.hint{font-size:12px;color:var(--muted);line-height:1.45}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=file]{display:none}
+.stage{position:relative;width:100%;aspect-ratio:4/5;max-height:62vh;background:#161b25;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+#video{width:100%;height:100%;object-fit:cover;display:none}
+#overlay{position:absolute;max-width:none;max-height:none;object-fit:contain;opacity:.55;pointer-events:none;transform-origin:center center;display:none}
+.placeholder{color:#fff;text-align:center;padding:25px;line-height:1.5}
+#cameraStatus{font-size:12px;color:var(--muted);margin-top:8px}
+.presetgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.preset{padding:8px 4px;font-size:12px}
+.preset span{display:block;font-size:25px;margin-bottom:3px}
+#learnCard{background:#fbfcff;border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+#learnGlyph{font-size:105px;line-height:1.15;color:#aebbd5;font-weight:800}
+#learnWord{font-weight:700;margin:5px}
+#learnHelp{font-size:12px;color:var(--muted)}
+.footer{text-align:center;color:var(--muted);font-size:11px;padding:2px 8px 20px}
+.hidden{display:none!important}
+@media(min-width:650px){main{grid-template-columns:1.2fr .8fr;align-items:start}.stagepanel{grid-row:span 2}}
+</style>
+</head>
+<body>
+<header><h1>✏️ Çizim Ustası</h1><div class="sub">Draw • Trace • Learn — çiz, takip et, öğren</div></header>
+<main>
+<section class="panel stagepanel">
+  <h2>Canlı çizim alanı</h2>
+  <div class="stage" id="stage">
+    <video id="video" autoplay playsinline muted></video>
+    <img id="overlay" alt="Çizim şablonu">
+    <div class="placeholder" id="placeholder">Önce kamerayı aç veya bir çizim seç.<br><br>Telefonu kâğıdın üzerine sabitleyip ekrandaki çizgileri takip et.</div>
+  </div>
+  <div id="cameraStatus">Kamera henüz açılmadı.</div>
+  <div class="row" style="margin-top:10px">
+    <button class="primary" id="startCam">Kamerayı aç</button>
+    <button id="stopCam">Kamerayı kapat</button>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <label class="filelabel" for="photoFile" style="text-align:center;margin:0">Galeriden resim seç</label>
+    <input id="photoFile" type="file" accept="image/*">
+    <button id="clearImage">Resmi kaldır</button>
+  </div>
+  <p class="hint">İpucu: Telefonu sabit tut. Telefon ekranındaki görüntüyü kâğıtla hizala. Kamera görüntüsü kâğıda projektör gibi yansımaz; ekranda üst üste görünür.</p>
+</section>
+
+<section class="panel">
+  <h2>Çizim ayarları</h2>
+  <label for="opacity">Resim saydamlığı: <b id="opacityVal">55%</b></label>
+  <input id="opacity" type="range" min="10" max="100" value="55">
+  <label for="scale">Resim boyutu: <b id="scaleVal">100%</b></label>
+  <input id="scale" type="range" min="40" max="180" value="100">
+  <label for="rotation">Döndürme: <b id="rotationVal">0°</b></label>
+  <input id="rotation" type="range" min="-180" max="180" value="0">
+  <div class="row" style="margin-top:10px">
+    <button id="mirror">Aynala</button>
+    <button id="reset">Ayarları sıfırla</button>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Hazır çizimler</h2>
+  <div class="presetgrid">
+    <button class="preset" data-preset="cat"><span>🐱</span>Kedi</button>
+    <button class="preset" data-preset="house"><span>🏠</span>Ev</button>
+    <button class="preset" data-preset="flower"><span>🌼</span>Çiçek</button>
+    <button class="preset" data-preset="car"><span>🚗</span>Araba</button>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Çocuklar için harf ve rakam</h2>
+  <div id="learnCard">
+    <div id="learnGlyph">A</div>
+    <div id="learnWord">Arı</div>
+    <div id="learnHelp">Harf şeklini kâğıda takip ederek çiz.</div>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <button id="prev">← Önceki</button>
+    <button class="primary" id="useLetter">Harf çizime aktar</button>
+    <button id="next">Sonraki →</button>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <button id="letters">Harfler A–Z</button>
+    <button id="numbers">Rakamlar 0–9</button>
+  </div>
+</section>
+<div class="footer">Çizim Ustası • İlk ücretsiz prototip • Görseller cihazında işlenir.</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const video=$('video'), overlay=$('overlay'), placeholder=$('placeholder');
+let stream=null, scale=100, rotation=0, mirrored=false, currentMode='letters', index=0, objectUrl=null;
+const alphabet=[['A','Arı'],['B','Balık'],['C','Ceviz'],['Ç','Çiçek'],['D','Davul'],['E','Elma'],['F','Fil'],['G','Gemi'],['Ğ','Yağmur'],['H','Horoz'],['I','Işık'],['İ','İnek'],['J','Jilet'],['K','Kedi'],['L','Limon'],['M','Masa'],['N','Nar'],['O','Okul'],['Ö','Ördek'],['P','Panda'],['R','Roket'],['S','Saat'],['Ş','Şemsiye'],['T','Top'],['U','Uçak'],['Ü','Üzüm'],['V','Vazo'],['Y','Yıldız'],['Z','Zebra']];
+const numbers=[['0','Sıfır'],['1','Bir'],['2','İki'],['3','Üç'],['4','Dört'],['5','Beş'],['6','Altı'],['7','Yedi'],['8','Sekiz'],['9','Dokuz']];
+function updateLearn(){const item=(currentMode==='letters'?alphabet:numbers)[index];$('learnGlyph').textContent=item[0];$('learnWord').textContent=item[1];}
+function svgData(content){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 600"><g fill="none" stroke="#252525" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">${content}</g></svg>`)}
+const presets={
+cat:`<path d="M135 220 L125 95 L225 165 Q250 150 275 165 L375 95 L365 220 Q410 280 390 380 Q365 500 250 500 Q135 500 110 380 Q90 280 135 220Z"/><path d="M185 300 Q205 280 225 300 M275 300 Q295 280 315 300 M235 370 Q250 385 265 370 M250 370 L250 390 M190 390 L105 375 M190 410 L105 420 M310 390 L395 375 M310 410 L395 420"/>`,
+house:`<path d="M70 280 L250 100 L430 280 M110 255 V500 H390 V255 M205 500 V365 H295 V500 M145 315 H195 V365 H145Z M305 315 H355 V365 H305Z"/>`,
+flower:`<path d="M250 300 C150 300 150 190 220 190 C160 95 280 70 280 180 C380 120 420 230 310 260 C390 340 290 410 250 320 C180 420 90 340 190 280 M250 320 V540 M250 440 Q150 390 125 455 Q190 510 250 470 M250 480 Q340 410 380 470 Q330 530 250 510"/>`,
+car:`<path d="M75 370 L105 270 Q120 235 165 230 H330 Q370 235 390 275 L430 370 V450 H70Z M145 235 L180 150 H315 L360 235 M70 370 H430 M140 450 A45 45 0 1 0 230 450 A45 45 0 1 0 140 450 M300 450 A45 45 0 1 0 390 450 A45 45 0 1 0 300 450"/>`
+};
+function setImage(src){overlay.src=src;overlay.style.display='block';placeholder.classList.add('hidden');applyTransform();}
+function applyTransform(){overlay.style.opacity=$('opacity').value/100;overlay.style.width=scale+'%';overlay.style.height='auto';overlay.style.transform=`translate(-50%,-50%) rotate(${rotation}deg) scaleX(${mirrored?-1:1})`;overlay.style.left='50%';overlay.style.top='50%';}
+$('startCam').onclick=async()=>{try{if(!navigator.mediaDevices?.getUserMedia){$('cameraStatus').textContent='Bu tarayıcı kamera erişimini desteklemiyor. HTTPS bağlantısı kullan.';return;}stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});video.srcObject=stream;video.style.display='block';placeholder.classList.add('hidden');$('cameraStatus').textContent='Kamera açık. Telefonu sabitle ve kâğıdı ekrana göre hizala.';}catch(e){$('cameraStatus').textContent='Kamera açılamadı: '+(e.message||'İzin verilmedi. Tarayıcıdan kamera izni ver.');}};
+$('stopCam').onclick=()=>{if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;video.style.display='none';$('cameraStatus').textContent='Kamera kapatıldı.';if(!overlay.src)placeholder.classList.remove('hidden');};
+$('photoFile').onchange=e=>{const f=e.target.files[0];if(!f)return;if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=URL.createObjectURL(f);setImage(objectUrl);};
+$('clearImage').onclick=()=>{overlay.removeAttribute('src');overlay.style.display='none';placeholder.classList.remove('hidden');$('photoFile').value='';};
+$('opacity').oninput=e=>{$('opacityVal').textContent=e.target.value+'%';applyTransform();};
+$('scale').oninput=e=>{scale=+e.target.value;$('scaleVal').textContent=scale+'%';applyTransform();};
+$('rotation').oninput=e=>{rotation=+e.target.value;$('rotationVal').textContent=rotation+'°';applyTransform();};
+$('mirror').onclick=()=>{mirrored=!mirrored;applyTransform();$('mirror').classList.toggle('active',mirrored);};
+$('reset').onclick=()=>{scale=100;rotation=0;mirrored=false;$('scale').value=100;$('rotation').value=0;$('opacity').value=55;$('scaleVal').textContent='100%';$('rotationVal').textContent='0°';$('opacityVal').textContent='55%';$('mirror').classList.remove('active');applyTransform();};
+document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>setImage(svgData(presets[b.dataset.preset])));
+$('prev').onclick=()=>{const arr=currentMode==='letters'?alphabet:numbers;index=(index-1+arr.length)%arr.length;updateLearn();};
+$('next').onclick=()=>{const arr=currentMode==='letters'?alphabet:numbers;index=(index+1)%arr.length;updateLearn();};
+$('letters').onclick=()=>{currentMode='letters';index=0;updateLearn();$('letters').classList.add('active');$('numbers').classList.remove('active');};
+$('numbers').onclick=()=>{currentMode='numbers';index=0;updateLearn();$('numbers').classList.add('active');$('letters').classList.remove('active');};
+$('useLetter').onclick=()=>{const item=(currentMode==='letters'?alphabet:numbers)[index][0];const safe=item.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));setImage('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 600"><text x="250" y="440" text-anchor="middle" font-family="Arial,sans-serif" font-size="390" font-weight="bold" fill="none" stroke="#222" stroke-width="5">${safe}</text></svg>`));};
+updateLearn();
+</script>
+</body>
+</html>

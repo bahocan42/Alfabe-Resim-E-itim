@@ -43,6 +43,7 @@ input[type=range]{max-width:120px}
 <button onclick="show('objects')">🚗 Nesneler</button>
 <button onclick="show('paint')">🖌️ Çizim</button>
 <button onclick="show('camera')">👻 Hayalet Kamera</button>
+  <button onclick="deleteGhost()">🗑️ Hayalet Fotoğrafını Sil</button>
 </nav>
 
 <section id="home" class="active">
@@ -275,6 +276,12 @@ x.globalAlpha=1;
 x.drawImage(draw,0,0,c.width,c.height);
 download(c.toDataURL('image/png'),'minik-ressam-hayalet.png');
 }
+  function deleteGhost(){
+ghost.removeAttribute('src');
+ghost.style.opacity=0;
+document.getElementById('ghostUpload').value='';
+alert('Hayalet fotoğrafı silindi! 👻');
+  }
 </script>
 </body>
 </html>

@@ -1,0 +1,392 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minik Kaşifler</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#fff8e9;color:#333}
+header{background:#ff9f43;color:white;text-align:center;padding:20px}
+header h1{margin:0;font-size:27px}
+nav{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;padding:12px}
+button{border:0;border-radius:12px;padding:12px 15px;background:#ffbd69;font-size:16px;font-weight:bold;cursor:pointer}
+button:active{transform:scale(.97)}
+.page{display:none;padding:12px;max-width:850px;margin:auto}
+.page.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px}
+.tile{background:white;border-radius:15px;padding:15px;text-align:center;box-shadow:0 2px 7px #ddd;cursor:pointer;font-size:18px}
+.tile span{display:block;font-size:38px;margin-bottom:8px}
+#canvas{width:100%;height:400px;background:white;border:3px solid #ffbd69;border-radius:12px;touch-action:none}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;align-items:center}
+input[type=color]{width:45px;height:40px}
+input[type=range]{max-width:130px}
+#cameraBox{position:relative;width:100%;background:#222;overflow:hidden;border-radius:12px}
+#camera{width:100%;display:block;min-height:250px;object-fit:contain}
+#ghost{position:absolute;top:20%;left:20%;width:60%;opacity:.5;touch-action:none;cursor:move}
+.gallery img{width:100%;border-radius:10px}
+.small{font-size:13px;color:#666}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🌈 Minik Kaşifler</h1>
+<p>Öğren, keşfet, çiz ve eğlen!</p>
+<div>⭐ Yıldızların: <b id="stars">0</b></div>
+</header>
+
+<nav>
+<button onclick="showPage('home')">🏠 Ana Sayfa</button>
+<button onclick="showPage('letters')">🔤 Harfler</button>
+<button onclick="showPage('animals')">🐱 Hayvanlar</button>
+<button onclick="showPage('objects')">🚗 Nesneler</button>
+<button onclick="showPage('drawing')">🎨 Çizim</button>
+<button onclick="showPage('cameraPage')">📷 Hayalet Kamera</button>
+<button onclick="showPage('gallery')">🖼️ Galerim</button>
+</nav>
+
+<section id="home" class="page active">
+<h2>Merhaba Minik Kaşif! 👋</h2>
+<div class="grid">
+<div class="tile" onclick="showPage('letters')"><span>🔤</span>Harfleri Öğren</div>
+<div class="tile" onclick="showPage('animals')"><span>🦁</span>Hayvanları Tanı</div>
+<div class="tile" onclick="showPage('objects')"><span>🚀</span>Nesneleri Keşfet</div>
+<div class="tile" onclick="showPage('drawing')"><span>🖍️</span>Resim Çiz</div>
+<div class="tile" onclick="showPage('cameraPage')"><span>📸</span>Hayalet Kamera</div>
+<div class="tile" onclick="showPage('gallery')"><span>⭐</span>Resimlerim</div>
+</div>
+</section>
+
+<section id="letters" class="page">
+<h2>🔤 Türk Alfabesi</h2>
+<p>Bir harfe dokun, dinle ve öğren!</p>
+<div id="letterGrid" class="grid"></div>
+</section>
+
+<section id="animals" class="page">
+<h2>🐾 Hayvanları Tanıyalım</h2>
+<div class="grid" id="animalGrid"></div>
+</section>
+
+<section id="objects" class="page">
+<h2>🚗 Nesneleri Tanıyalım</h2>
+<div class="grid" id="objectGrid"></div>
+</section>
+
+<section id="drawing" class="page">
+<h2>🎨 Resim Atölyesi</h2>
+<div class="tools">
+<label>Renk <input type="color" id="color" value="#ff0000"></label>
+<label>Fırça <input type="range" id="brush" min="1" max="30" value="5"></label>
+<button onclick="erase()">Silgi</button>
+<button onclick="clearCanvas()">Temizle</button>
+<button onclick="saveDrawing()">💾 Kaydet</button>
+</div>
+<div class="tools">
+<label>Fotoğraf ekle <input type="file" accept="image/*" onchange="loadBackground(event)"></label>
+</div>
+<canvas id="canvas"></canvas>
+<p class="small">Parmağınla çiz! Fotoğraf ekleyip üzerine de resim yapabilirsin.</p>
+</section>
+
+<section id="cameraPage" class="page">
+<h2>📷 Hayalet Kamera</h2>
+<p>Fotoğrafını seç, kameranın üzerinde saydam şekilde görünsün!</p>
+<div class="tools">
+<button onclick="startCamera()">Kamerayı Aç</button>
+<button onclick="stopCamera()">Kamerayı Kapat</button>
+</div>
+<div class="tools">
+<label>Hayalet fotoğrafı seç <input type="file" accept="image/*" onchange="loadGhost(event)"></label>
+</div>
+<div id="cameraBox">
+<video id="camera" autoplay playsinline muted></video>
+<img id="ghost" hidden>
+</div>
+<div class="tools">
+<label>Saydamlık <input type="range" id="opacity" min="0.1" max="1" step="0.05" value="0.5"></label>
+<label>Boyut <input type="range" id="size" min="20" max="100" value="60"></label>
+<button onclick="captureCamera()">📸 Çek ve Çizime Aktar</button>
+</div>
+<p class="small">Fotoğrafı parmağınla sürükleyerek taşıyabilirsin.</p>
+</section>
+
+<section id="gallery" class="page">
+<h2>🖼️ Benim Resimlerim</h2>
+<div id="galleryGrid" class="grid gallery"></div>
+</section>
+
+<script>
+const letters=[
+["A","Arı","🐝"],["B","Balık","🐟"],["C","Civciv","🐤"],
+["Ç","Çilek","🍓"],["D","Deniz","🌊"],["E","Elma","🍎"],
+["F","Fil","🐘"],["G","Gemi","🚢"],["Ğ","Yağmur","🌧️"],
+["H","Horoz","🐓"],["I","Işık","💡"],["İ","İnek","🐄"],
+["J","Jet","✈️"],["K","Kedi","🐱"],["L","Limon","🍋"],
+["M","Muz","🍌"],["N","Nar","🍎"],["O","Okul","🏫"],
+["Ö","Ördek","🦆"],["P","Papağan","🦜"],["R","Robot","🤖"],
+["S","Saat","⏰"],["Ş","Şemsiye","☂️"],["T","Tavşan","🐰"],
+["U","Uçak","✈️"],["Ü","Üzüm","🍇"],["V","Vazo","🏺"],
+["Y","Yıldız","⭐"],["Z","Zebra","🦓"]
+];
+
+const animals=[
+["Kedi","🐱"],["Köpek","🐶"],["Aslan","🦁"],["Fil","🐘"],
+["Maymun","🐵"],["Tavşan","🐰"],["At","🐴"],["İnek","🐄"],
+["Koyun","🐑"],["Ördek","🦆"],["Balık","🐟"],["Kaplumbağa","🐢"]
+];
+
+const objects=[
+["Araba","🚗"],["Uçak","✈️"],["Gemi","🚢"],["Top","⚽"],
+["Ev","🏠"],["Kitap","📚"],["Saat","⏰"],["Telefon","📱"],
+["Bisiklet","🚲"],["Kalem","✏️"],["Çanta","🎒"],["Uçurtma","🪁"]
+];
+
+function speak(text){
+if(!("speechSynthesis" in window)){
+alert("Bu tarayıcı seslendirmeyi desteklemiyor.");
+return;
+}
+speechSynthesis.cancel();
+let msg=new SpeechSynthesisUtterance(text);
+msg.lang="tr-TR";
+let voices=speechSynthesis.getVoices();
+let turkish=voices.filter(v=>v.lang.toLowerCase().startsWith("tr"));
+let female=turkish.find(v=>/female|kadın|woman|seda|filiz/i.test(v.name));
+if(female) msg.voice=female;
+else if(turkish.length) msg.voice=turkish[0];
+msg.rate=0.85;
+speechSynthesis.speak(msg);
+}
+
+function showPage(id){
+document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+if(id==="drawing") resizeCanvas();
+if(id==="gallery") loadGallery();
+}
+
+function makeTiles(items,target,letterMode=false){
+let grid=document.getElementById(target);
+grid.innerHTML="";
+items.forEach(item=>{
+let div=document.createElement("div");
+div.className="tile";
+div.innerHTML="<span>"+(letterMode?item[0]:item[1])+"</span>"+(letterMode?item[1]:item[0]);
+div.onclick=()=>speak(letterMode?item[0]+". "+item[1]:item[0]);
+grid.appendChild(div);
+});
+}
+
+makeTiles(letters,"letterGrid",true);
+makeTiles(animals,"animalGrid");
+makeTiles(objects,"objectGrid");
+
+// ÇİZİM
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+let drawing=false,lastX=0,lastY=0,erasing=false,bgImage=null;
+
+function resizeCanvas(){
+let old=document.createElement("canvas");
+old.width=canvas.width||1;
+old.height=canvas.height||1;
+old.getContext("2d").drawImage(canvas,0,0);
+let rect=canvas.getBoundingClientRect();
+let w=Math.max(300,rect.width);
+let h=400;
+canvas.width=w*devicePixelRatio;
+canvas.height=h*devicePixelRatio;
+ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+ctx.lineCap="round";
+ctx.lineJoin="round";
+if(old.width>1) ctx.drawImage(old,0,0,w,h);
+if(bgImage) drawBackground();
+}
+
+function position(e){
+let r=canvas.getBoundingClientRect();
+return {x:e.clientX-r.left,y:e.clientY-r.top};
+}
+
+canvas.addEventListener("pointerdown",e=>{
+drawing=true;
+canvas.setPointerCapture(e.pointerId);
+let p=position(e);lastX=p.x;lastY=p.y;
+});
+
+canvas.addEventListener("pointermove",e=>{
+if(!drawing)return;
+let p=position(e);
+ctx.beginPath();
+ctx.moveTo(lastX,lastY);
+ctx.lineTo(p.x,p.y);
+ctx.strokeStyle=erasing?"white":document.getElementById("color").value;
+ctx.lineWidth=erasing?30:document.getElementById("brush").value;
+ctx.stroke();
+lastX=p.x;lastY=p.y;
+});
+
+canvas.addEventListener("pointerup",()=>drawing=false);
+canvas.addEventListener("pointercancel",()=>drawing=false);
+
+function erase(){erasing=true}
+document.getElementById("color").addEventListener("input",()=>erasing=false);
+
+function clearCanvas(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+bgImage=null;
+}
+
+function drawBackground(){
+if(!bgImage)return;
+let w=canvas.clientWidth,h=canvas.clientHeight;
+let scale=Math.min(w/bgImage.width,h/bgImage.height);
+let iw=bgImage.width*scale,ih=bgImage.height*scale;
+ctx.drawImage(bgImage,(w-iw)/2,(h-ih)/2,iw,ih);
+}
+
+function loadBackground(e){
+let file=e.target.files[0];
+if(!file)return;
+let im=new Image();
+im.onload=()=>{
+bgImage=im;
+resizeCanvas();
+};
+im.src=URL.createObjectURL(file);
+}
+
+function saveDrawing(){
+let data=canvas.toDataURL("image/png");
+let req=indexedDB.open("MinikKasiflerDB",1);
+req.onupgradeneeded=()=>{
+req.result.createObjectStore("pictures",{keyPath:"id",autoIncrement:true});
+};
+req.onsuccess=()=>{
+let db=req.result;
+let tx=db.transaction("pictures","readwrite");
+tx.objectStore("pictures").add({image:data,date:new Date().toLocaleString("tr-TR")});
+tx.oncomplete=()=>{
+let stars=Number(localStorage.getItem("stars")||0)+1;
+localStorage.setItem("stars",stars);
+document.getElementById("stars").textContent=stars;
+alert("Resmin kaydedildi! ⭐");
+};
+};
+req.onerror=()=>alert("Kayıt yapılamadı. Tekrar deneyelim.");
+}
+
+function loadGallery(){
+let req=indexedDB.open("MinikKasiflerDB",1);
+req.onupgradeneeded=()=>{
+req.result.createObjectStore("pictures",{keyPath:"id",autoIncrement:true});
+};
+req.onsuccess=()=>{
+let db=req.result;
+let tx=db.transaction("pictures","readonly");
+let get=tx.objectStore("pictures").getAll();
+get.onsuccess=()=>{
+let grid=document.getElementById("galleryGrid");
+grid.innerHTML="";
+get.result.reverse().forEach(pic=>{
+let box=document.createElement("div");
+box.className="tile";
+let img=document.createElement("img");
+img.src=pic.image;
+let date=document.createElement("p");
+date.textContent=pic.date;
+let del=document.createElement("button");
+del.textContent="Sil";
+del.onclick=()=>deletePicture(pic.id);
+box.append(img,date,del);
+grid.appendChild(box);
+});
+};
+};
+}
+
+function deletePicture(id){
+let req=indexedDB.open("MinikKasiflerDB",1);
+req.onsuccess=()=>{
+let db=req.result;
+db.transaction("pictures","readwrite").objectStore("pictures").delete(id);
+setTimeout(loadGallery,200);
+};
+}
+
+// KAMERA
+let stream=null;
+const video=document.getElementById("camera");
+const ghost=document.getElementById("ghost");
+
+async function startCamera(){
+try{
+if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+alert("Kamera için HTTPS bağlantısı ve desteklenen tarayıcı gerekiyor.");
+return;
+}
+stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+video.srcObject=stream;
+}catch(e){
+alert("Kamera açılamadı. Tarayıcıdan kamera izni vermelisin.");
+}
+}
+
+function stopCamera(){
+if(stream)stream.getTracks().forEach(t=>t.stop());
+stream=null;
+video.srcObject=null;
+}
+
+function loadGhost(e){
+let file=e.target.files[0];
+if(!file)return;
+ghost.src=URL.createObjectURL(file);
+ghost.hidden=false;
+}
+
+document.getElementById("opacity").oninput=e=>ghost.style.opacity=e.target.value;
+document.getElementById("size").oninput=e=>ghost.style.width=e.target.value+"%";
+
+let dragging=false,offsetX=0,offsetY=0;
+ghost.addEventListener("pointerdown",e=>{
+dragging=true;
+ghost.setPointerCapture(e.pointerId);
+let r=ghost.getBoundingClientRect();
+offsetX=e.clientX-r.left;
+offsetY=e.clientY-r.top;
+});
+ghost.addEventListener("pointermove",e=>{
+if(!dragging)return;
+let box=document.getElementById("cameraBox").getBoundingClientRect();
+ghost.style.left=(e.clientX-box.left-offsetX)+"px";
+ghost.style.top=(e.clientY-box.top-offsetY)+"px";
+});
+ghost.addEventListener("pointerup",()=>dragging=false);
+ghost.addEventListener("pointercancel",()=>dragging=false);
+
+function captureCamera(){
+if(!stream||!video.videoWidth){
+alert("Önce kamerayı açmalısın.");
+return;
+}
+let temp=document.createElement("canvas");
+temp.width=video.videoWidth;
+temp.height=video.videoHeight;
+temp.getContext("2d").drawImage(video,0,0);
+let im=new Image();
+im.onload=()=>{
+bgImage=im;
+showPage("drawing");
+resizeCanvas();
+};
+im.src=temp.toDataURL("image/jpeg",0.9);
+}
+
+document.getElementById("stars").textContent=localStorage.getItem("stars")||0;
+</script>
+</body>
+</html>
